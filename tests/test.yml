@@ -1,0 +1,6 @@
+---
+- name: Include WireGuard role
+  hosts: test
+  become: true
+  roles:
+    - ../wireguard

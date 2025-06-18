@@ -1,0 +1,28 @@
+---
+- name: Mettre à jour la liste des paquets (apt update)
+  apt:
+    update_cache: yes
+- name: Définir les paquets à installer (Ubuntu)
+  set_fact:
+    wireguard_required_packages:
+      - wireguard
+      - qrencode
+      - iproute2
+
+- name: Inclure le paquet firewall si nécessaire
+  set_fact:
+    wireguard_required_packages: "{{ wireguard_required_packages + ['firewalld'] }}"
+  when:
+    - ansible_facts['os_family'] == "Debian"
+    - ansible_facts['distribution'] == "Ubuntu"
+    - ansible_facts['distribution_version'] is version('22.04', '>=')
+
+- name: Mettre à jour la liste des paquets (apt update)
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Installer les paquets nécessaires pour WireGuard
+  apt:
+    name: "{{ wireguard_required_packages }}"
+    state: present

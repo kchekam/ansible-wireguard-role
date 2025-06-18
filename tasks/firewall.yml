@@ -1,0 +1,13 @@
+---
+- name: Générer le fichier systemd pour les règles iptables persistantes
+  template:
+    src: wg-iptables.service.j2
+    dest: /etc/systemd/system/wg-iptables.service
+    mode: '0644'
+
+- name: Activer et démarrer le service de pare-feu WireGuard
+  systemd:
+    name: wg-iptables.service
+    enabled: yes
+    state: started
+    daemon_reload: yes

@@ -1,0 +1,8 @@
+# This file is managed by Ansible
+# Do not alter the commented lines
+# They are used by wireguard-install
+
+[Interface]
+Address = {{ wireguard_server_address }}
+PrivateKey = {{ wireguard_private_key }}
+ListenPort = {{ wireguard_port }}

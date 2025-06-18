@@ -1,0 +1,22 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Include OS detection and prechecks
+  import_tasks: checks.yml
+
+- name: Installer WireGuard et ses dépendances
+  import_tasks: install.yml
+
+- name: Configurer le serveur WireGuard
+  import_tasks: configure.yml
+
+- name: Activer le routage IP
+  import_tasks: sysctl.yml
+
+- name: Configurer le pare-feu
+  import_tasks: firewall.yml
+
+- name: Créer les clients WireGuard
+  include_tasks: client.yml
+  loop: "{{ wireguard_clients }}"
+  loop_control:
+    loop_var: item

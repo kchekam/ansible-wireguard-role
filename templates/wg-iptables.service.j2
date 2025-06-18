@@ -1,0 +1,27 @@
+[Unit]
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/iptables -w 5 -t nat -A POSTROUTING -s {{ wireguard_subnet }} ! -d {{ wireguard_subnet }} -j MASQUERADE
+ExecStart=/usr/sbin/iptables -w 5 -I INPUT -p udp --dport {{ wireguard_port }} -j ACCEPT
+ExecStart=/usr/sbin/iptables -w 5 -I FORWARD -s {{ wireguard_subnet }} -j ACCEPT
+ExecStart=/usr/sbin/iptables -w 5 -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+ExecStop=/usr/sbin/iptables -w 5 -t nat -D POSTROUTING -s {{ wireguard_subnet }} ! -d {{ wireguard_subnet }} -j MASQUERADE
+ExecStop=/usr/sbin/iptables -w 5 -D INPUT -p udp --dport {{ wireguard_port }} -j ACCEPT
+ExecStop=/usr/sbin/iptables -w 5 -D FORWARD -s {{ wireguard_subnet }} -j ACCEPT
+ExecStop=/usr/sbin/iptables -w 5 -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+{% if wireguard_enable_ipv6 %}
+ExecStart=/usr/sbin/ip6tables -t nat -A POSTROUTING -s {{ wireguard_ipv6_subnet }} ! -d {{ wireguard_ipv6_subnet }} -j MASQUERADE
+ExecStart=/usr/sbin/ip6tables -I FORWARD -s {{ wireguard_ipv6_subnet }} -j ACCEPT
+ExecStart=/usr/sbin/ip6tables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+ExecStop=/usr/sbin/ip6tables -t nat -D POSTROUTING -s {{ wireguard_ipv6_subnet }} ! -d {{ wireguard_ipv6_subnet }} -j MASQUERADE
+ExecStop=/usr/sbin/ip6tables -D FORWARD -s {{ wireguard_ipv6_subnet }} -j ACCEPT
+ExecStop=/usr/sbin/ip6tables -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+{% endif %}
+
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

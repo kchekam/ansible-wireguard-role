@@ -1,0 +1,75 @@
+---
+- name: Générer la clé privée pour {{ item.name }}
+  command: wg genkey
+  register: client_private_key
+  changed_when: true
+
+
+- name: Générer la clé publique pour {{ item.name }}
+  shell: "echo '{{ client_private_key.stdout }}' | wg pubkey"
+  register: client_public_key
+  changed_when: true
+  
+
+- name: Générer la clé publique du serveur à partir de la clé privée
+  shell: "echo '{{ wireguard_private_key }}' | wg pubkey"
+  register: server_public_key
+  changed_when: false
+  
+
+
+- name: Générer la clé PSK pour {{ item.name }}
+  command: wg genpsk
+  register: client_psk
+  changed_when: true
+
+
+- name: Ajouter la config du client dans wg0.conf
+  blockinfile:
+    path: "/etc/wireguard/{{ wireguard_interface }}.conf"
+    marker: "# {mark} PEER {{ item.name }}"
+    block: |
+      [Peer]
+      PublicKey = {{ client_public_key.stdout }}
+      PresharedKey = {{ client_psk.stdout }}
+      AllowedIPs = {{ item.ip }}/32
+  notify: Restart WireGuard
+
+- name: Générer le fichier client .conf
+  copy:
+    dest: "/etc/wireguard/{{ item.name }}.conf"
+    content: |
+      [Interface]
+      Address = {{ item.ip }}/24
+      DNS = {{ item.dns | join(', ') }}
+      PrivateKey = {{ client_private_key.stdout }}
+
+      [Peer]
+      PublicKey = {{ server_public_key.stdout }}
+      PresharedKey = {{ client_psk.stdout }}
+      AllowedIPs = 0.0.0.0/0, ::/0
+      Endpoint = {{ wireguard_server_address | regex_replace('/[0-9]+', '') }}:{{ wireguard_port }}
+      PersistentKeepalive = 25
+    mode: '0600'
+
+
+- name: Détecter le répertoire home de l'utilisateur appelant
+  set_fact:
+    client_export_dir: "/home/{{ ansible_env.SUDO_USER | default(ansible_user_id) }}/wireguard-clients"
+
+- name: Créer le dossier d'export si nécessaire
+  file:
+    path: "{{ client_export_dir }}"
+    state: directory
+    owner: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
+    group: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
+    mode: '0750'
+
+- name: Copier la configuration du client vers le répertoire utilisateur
+  copy:
+    src: "/etc/wireguard/{{ item.name }}.conf"
+    dest: "{{ client_export_dir }}/{{ item.name }}.conf"
+    remote_src: yes
+    owner: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
+    group: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
+    mode: '0600'

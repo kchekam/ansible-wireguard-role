@@ -1,0 +1,35 @@
+---
+- name: Vérification que le script est exécuté en tant que root
+  assert:
+    that: ansible_user_id == 'root'
+    fail_msg: "Ce rôle doit être exécuté avec les privilèges root."
+
+# - name: Vérification que le shell utilisé est Bash (et non Dash)
+#   command: readlink /proc/$$/exe
+#   register: shell_check
+#   changed_when: false
+
+# - name: Échec si le shell est Dash
+#   fail:
+#     msg: "Ce rôle doit être exécuté avec bash, pas sh."
+#   when: shell_check.stdout is search("dash")
+
+- name: Vérification que le noyau n'est pas trop ancien (>= 3)
+  fail:
+    msg: "Le noyau est trop ancien, incompatible avec WireGuard."
+  when: ansible_kernel.split('.')[0] | int < 3
+
+
+### check OS simplifie
+- name: Vérification que la machine est Ubuntu Jammy (22.04)
+  assert:
+    that:
+      - ansible_distribution == "Ubuntu"
+      - ansible_distribution_version is version('22.04', '>=')
+    fail_msg: "Ce rôle supporte uniquement Ubuntu 22.04 pour le moment."
+
+- name: Vérification que la machine n'est pas dans un conteneur
+  command: systemd-detect-virt -cq
+  register: container_check
+  failed_when: container_check.rc == 0
+  changed_when: false

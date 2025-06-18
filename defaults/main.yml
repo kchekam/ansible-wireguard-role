@@ -1,0 +1,16 @@
+---
+wireguard_interface: wg0
+wireguard_port: 51820
+wireguard_subnet: 10.7.0.0/24
+wireguard_dns: ["8.8.8.8", "8.8.4.4"]
+wireguard_enable_ipv6: false
+#wireguard_clients: []  # liste des clients à ajouter
+wireguard_ipv6_subnet: "fddd:2c4:2c4:2c4::/64"
+wireguard_clients:
+  - name: client1
+    ip: "10.7.0.2"
+    dns: ["8.8.8.8", "8.8.4.4"]
+
+
+
+
